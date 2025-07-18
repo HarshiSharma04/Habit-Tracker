@@ -1,0 +1,94 @@
+body {
+    background: linear-gradient(to right, #ffe0ec, #fdf2f8);
+    text-align: center;
+    font-family: 'Fredoka', sans-serif;
+    padding: 20px;
+    margin: 0;
+  }
+  
+  #title {
+    font-size: 3rem;
+    margin: 20px 0 0;
+  }
+  
+  #subtitle {
+    opacity: 0.8;
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+  }
+  
+  #calendarContainer {
+    display: flex;
+    justify-content: center;
+  }
+  
+  #calendarDiv {
+    background-color: #fff0f5;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: fit-content;
+    padding: 10px;
+  }
+  
+  #calendarHeading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffc0cb;
+    padding: 15px 20px;
+    font-size: 18px;
+    border-radius: 15px 15px 0 0;
+    font-weight: 600;
+  }
+  
+  #calendarContent {
+    padding: 20px;
+  }
+  
+  .weekRow {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .day {
+    width: 40px;
+    height: 40px;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 50%;
+    background-color: white;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .day:hover {
+    transform: scale(1.1);
+    background-color: #ffe6e6;
+  }
+  
+  .day.completed {
+    background-color: #ff94c2;
+    color: white;
+    font-weight: bold;
+    border: 2px solid #ff5b9f;
+  }
+  
+  #resetButton {
+    margin-top: 30px;
+    padding: 10px 20px;
+    background-color: #ffb3c1;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s;
+  }
+  
+  #resetButton:hover {
+    background-color: #ff8ba7;
+  }
+  

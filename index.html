@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Habit Tracker</title>
+  <link rel="icon" type="image/x-icon" href="habit_tracker_icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1 id="title">Month</h1>
+  <h2 id="subtitle">Monthly Habit Tracker</h2>
+
+  <div id="calendarContainer">
+    <div id="calendarDiv">
+      <div id="calendarHeading">
+        <p id="habitTitle">Click to set your habit</p>
+        <p id="totalDays">0/31</p>
+      </div>
+      <div id="calendarContent" id="tracker">
+        <!-- Calendar will be injected here by JS -->
+      </div>
+    </div>
+  </div>
+  <button id="resetButton">Reset Habit Data</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
