@@ -47,6 +47,74 @@ document.getElementById("addHabitBtn").addEventListener("click", () => {
   }
 });
 
+// Calculate current streak for a habit
+function calculateStreak(habit) {
+  let currentStreak = 0;
+  let checkDate = new Date(currentYear, currentMonth, currentDate);
+  
+  // Go backwards from today to find consecutive completed days
+  while (checkDate.getDate() >= 1) {
+    const dayKey = `${checkDate.getFullYear()}-${checkDate.getMonth() + 1}-${checkDate.getDate()}`;
+    
+    if (habit.completedDays[dayKey] === true) {
+      currentStreak++;
+    } else {
+      break; // Break streak if day is not completed
+    }
+    
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+  
+  return currentStreak;
+}
+
+// Update progress bar
+function updateProgressBar(habitId, completedCount, totalDays) {
+  const progressFill = document.getElementById(`progress_${habitId}`);
+  const progressText = document.getElementById(`progress_text_${habitId}`);
+  
+  if (progressFill && progressText) {
+    const percentage = Math.round((completedCount / totalDays) * 100);
+    progressFill.style.width = `${percentage}%`;
+    progressText.textContent = `${percentage}% Complete`;
+  }
+}
+
+// Update habit statistics
+function updateHabitStats(habitId) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+
+  // Calculate completed days count
+  let completedCount = 0;
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dayKey = `${currentYear}-${currentMonth + 1}-${i}`;
+    if (habit.completedDays[dayKey] === true) {
+      completedCount++;
+    }
+  }
+
+  // Calculate current streak
+  const currentStreak = calculateStreak(habit);
+
+  // Update UI elements
+  const totalElement = document.getElementById(`habit_${habitId}_total`);
+  const streakElement = document.getElementById(`streak_${habitId}`);
+  
+  if (totalElement) {
+    totalElement.textContent = `${completedCount}/${daysInMonth}`;
+  }
+  
+  if (streakElement) {
+    streakElement.textContent = `${currentStreak} day streak`;
+  }
+
+  // Update progress bar
+  updateProgressBar(habitId, completedCount, daysInMonth);
+
+  return { completedCount, currentStreak };
+}
+
 function createHabitCard(habit) {
   const habitCard = document.createElement("div");
   habitCard.className = "habitCard";
@@ -59,29 +127,49 @@ function createHabitCard(habit) {
   name.className = "habitName";
   name.textContent = habit.name;
 
+  // Create stats container
+  const statsContainer = document.createElement("div");
+  statsContainer.className = "habitStats";
+
   const total = document.createElement("p");
   total.className = "habitTotal";
   total.id = `habit_${habit.id}_total`;
 
-  // Calculate completed days count
-  let completedDays = 0;
-  for (let i = 1; i <= daysInMonth; i++) {
-    const dayKey = `${currentYear}-${currentMonth + 1}-${i}`;
-    if (habit.completedDays[dayKey] === true) {
-      completedDays++;
-    }
-  }
-  total.textContent = `${completedDays}/${daysInMonth}`;
+  const streak = document.createElement("p");
+  streak.className = "streakCounter";
+  streak.id = `streak_${habit.id}`;
+
+  statsContainer.appendChild(total);
+  statsContainer.appendChild(streak);
 
   habitHeader.appendChild(name);
-  habitHeader.appendChild(total);
+  habitHeader.appendChild(statsContainer);
 
+  // Create progress bar container
+  const progressContainer = document.createElement("div");
+  progressContainer.className = "progressContainer";
+
+  const progressBar = document.createElement("div");
+  progressBar.className = "progressBar";
+
+  const progressFill = document.createElement("div");
+  progressFill.className = "progressFill";
+  progressFill.id = `progress_${habit.id}`;
+
+  const progressText = document.createElement("p");
+  progressText.className = "progressText";
+  progressText.id = `progress_text_${habit.id}`;
+
+  progressBar.appendChild(progressFill);
+  progressContainer.appendChild(progressBar);
+  progressContainer.appendChild(progressText);
+
+  // Create calendar
   const calendar = document.createElement("div");
   calendar.className = "calendarContent";
 
   // Create calendar grid
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  let dayCount = 1;
   
   // Calculate total weeks needed
   const totalCells = Math.ceil((daysInMonth + firstDay) / 7) * 7;
@@ -101,6 +189,11 @@ function createHabitCard(habit) {
       if (cellIndex >= firstDay && currentDayNumber <= daysInMonth) {
         dayDiv.innerText = currentDayNumber;
         dayDiv.id = `habit_${habit.id}_day_${currentDayNumber}`;
+        
+        // Highlight today's date
+        if (currentDayNumber === currentDate) {
+          dayDiv.classList.add("today");
+        }
         
         // Check if day is completed
         const dayKey = `${currentYear}-${currentMonth + 1}-${currentDayNumber}`;
@@ -148,10 +241,14 @@ function createHabitCard(habit) {
   buttonContainer.appendChild(deleteBtn);
 
   habitCard.appendChild(habitHeader);
+  habitCard.appendChild(progressContainer);
   habitCard.appendChild(calendar);
   habitCard.appendChild(buttonContainer);
 
   document.getElementById("habitContainer").appendChild(habitCard);
+
+  // Initialize stats
+  updateHabitStats(habit.id);
 }
 
 function toggleDay(habitId, dayNumber) {
@@ -160,7 +257,6 @@ function toggleDay(habitId, dayNumber) {
 
   const dayKey = `${currentYear}-${currentMonth + 1}-${dayNumber}`;
   const dayElement = document.getElementById(`habit_${habitId}_day_${dayNumber}`);
-  const totalElement = document.getElementById(`habit_${habitId}_total`);
 
   if (habit.completedDays[dayKey] === true) {
     // Mark as incomplete
@@ -172,25 +268,24 @@ function toggleDay(habitId, dayNumber) {
     dayElement.classList.add("completed");
   }
 
-  // Update total count
-  let completedCount = 0;
-  for (let i = 1; i <= daysInMonth; i++) {
-    const key = `${currentYear}-${currentMonth + 1}-${i}`;
-    if (habit.completedDays[key] === true) {
-      completedCount++;
-    }
-  }
-
-  totalElement.textContent = `${completedCount}/${daysInMonth}`;
+  // Update statistics
+  const stats = updateHabitStats(habitId);
 
   // Save to localStorage
   localStorage.setItem('habits', JSON.stringify(habits));
 
   // Check if habit is completed
-  if (completedCount === daysInMonth) {
+  if (stats.completedCount === daysInMonth) {
     setTimeout(() => {
       alert(`🎉 Congratulations! You've completed your habit "${habit.name}" for the entire month!`);
     }, 100);
+  }
+
+  // Special message for streaks
+  if (stats.currentStreak > 0 && stats.currentStreak % 7 === 0) {
+    setTimeout(() => {
+      alert(`🔥 Amazing! You're on a ${stats.currentStreak}-day streak with "${habit.name}"!`);
+    }, 150);
   }
 }
 
@@ -209,11 +304,8 @@ function resetHabit(habitId) {
     }
   }
 
-  // Update total
-  const totalElement = document.getElementById(`habit_${habitId}_total`);
-  if (totalElement) {
-    totalElement.textContent = `0/${daysInMonth}`;
-  }
+  // Update statistics
+  updateHabitStats(habitId);
 
   // Save to localStorage
   localStorage.setItem('habits', JSON.stringify(habits));
@@ -229,7 +321,11 @@ function deleteHabit(habitId) {
   // Remove from DOM
   const habitCard = document.querySelector(`[data-habit-id="${habitId}"]`);
   if (habitCard) {
-    habitCard.remove();
+    habitCard.style.transform = 'translateX(-100%)';
+    habitCard.style.opacity = '0';
+    setTimeout(() => {
+      habitCard.remove();
+    }, 300);
   }
 }
 
@@ -240,5 +336,42 @@ function loadHabits() {
   });
 }
 
+// Add smooth entrance animation for new habits
+function animateNewHabit() {
+  const habitCards = document.querySelectorAll('.habitCard');
+  const lastCard = habitCards[habitCards.length - 1];
+  if (lastCard) {
+    lastCard.style.opacity = '0';
+    lastCard.style.transform = 'translateY(50px)';
+    setTimeout(() => {
+      lastCard.style.transition = 'all 0.5s ease';
+      lastCard.style.opacity = '1';
+      lastCard.style.transform = 'translateY(0)';
+    }, 50);
+  }
+}
+
+// Override the original createHabitCard call to add animation
+const originalAddHabitBtn = document.getElementById("addHabitBtn");
+originalAddHabitBtn.addEventListener("click", () => {
+  setTimeout(animateNewHabit, 100);
+});
+
 // Initialize the app
-loadHabits();
+document.addEventListener('DOMContentLoaded', () => {
+  loadHabits();
+  
+  // Add entrance animation to existing habits
+  setTimeout(() => {
+    const habitCards = document.querySelectorAll('.habitCard');
+    habitCards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(30px)';
+      setTimeout(() => {
+        card.style.transition = 'all 0.5s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, index * 100);
+    });
+  }, 100);
+});

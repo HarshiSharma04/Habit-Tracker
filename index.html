@@ -1,18 +1,24 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <title>Habit Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="habit_tracker_icon.png">
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 id="title">Month</h1>
-  <h2 id="subtitle">Monthly Habit Tracker</h2>
-  
-  <button id="addHabitBtn">+ Add Habit</button>
-  <div id="habitContainer"></div>
+  <div class="container">
+    <h1 id="title">Month</h1>
+    <h2 id="subtitle">Monthly Habit Tracker</h2>
+    
+    <button id="addHabitBtn">
+      <span class="btn-icon">+</span>
+      <span class="btn-text">Add Habit</span>
+    </button>
+    
+    <div id="habitContainer"></div>
+  </div>
 
   <script src="script.js"></script>
 </body>
