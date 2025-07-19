@@ -37,7 +37,7 @@ function createMonthNav() {
   nav.className = "month-navigation";
   nav.innerHTML = `
     <button class="nav-btn" id="prevMonth">&larr;</button>
-    <h1 id="title">${months[currentMonth]} ${currentYear}</h1>
+    
     <button class="nav-btn" id="nextMonth">&rarr;</button>
   `;
   const container = document.querySelector(".container");
@@ -59,27 +59,53 @@ function changeMonth(offset) {
 }
 
 // === ADD HABIT === //
+// === OPEN CUSTOM MODAL === //
 function promptNewHabit() {
-  const name = prompt("Enter habit name:");
-  if (!name || !name.trim()) return;
+  document.getElementById("habitModal").style.display = "flex";
+}
 
-  const category = prompt("Enter a category/tag for this habit:")?.trim() || "General";
+// === HANDLE MODAL SUBMIT === //
+document.getElementById("saveModalBtn").onclick = () => {
+  const name = document.getElementById("habitNameInput").value.trim();
+  const category = document.getElementById("habitCategoryInput").value.trim() || "General";
+
+  if (!name) return;
+
   const exists = habits.find(h => h.name === name && h.year === currentYear && h.month === currentMonth);
-  if (exists) {
-    return alert("Habit already exists this month!");
-  }
+  if (exists) return showToast("⚠️ Habit already exists this month!");
 
   const newHabit = {
     id: Date.now(),
-    name: name.trim(),
+    name,
     category,
     year: currentYear,
     month: currentMonth,
     completedDays: {}
   };
+
   habits.push(newHabit);
   saveHabits();
-  createHabitCard(newHabit);
+  rebuildUI();
+  closeHabitModal();
+};
+
+document.getElementById("cancelModalBtn").onclick = closeHabitModal;
+
+function closeHabitModal() {
+  document.getElementById("habitModal").style.display = "none";
+  document.getElementById("habitNameInput").value = "";
+  document.getElementById("habitCategoryInput").value = "";
+}
+
+// === CUSTOM TOAST FOR ACHIEVEMENTS === //
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
 }
 
 // === EXPORT FUNCTION === //
@@ -109,7 +135,7 @@ function updateAchievement(habitId, stats) {
     if (val.check(stats) && !achievements[achKey]) {
       achievements[achKey] = true;
       localStorage.setItem('achievements', JSON.stringify(achievements));
-      setTimeout(() => alert(val.message), 200);
+      showToast(val.message);
     }
   });
 }

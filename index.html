@@ -3,7 +3,8 @@
 <head>
   <title>Habit Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/x-icon" href="habit_tracker_icon.png">
+  <link rel="icon" type="image/x-icon" href="habit_tacker_icon.png">
+
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -20,6 +21,22 @@
     <div id="habitContainer"></div>
   </div>
 
-  <script src="script.js"></script>
+  
+  <!-- Modal for Adding Habit -->
+<div id="habitModal" class="modal">
+  <div class="modal-content">
+    <h2>Add New Habit</h2>
+    <input type="text" id="habitNameInput" placeholder="Habit name">
+    <input type="text" id="habitCategoryInput" placeholder="Category (e.g. Health)">
+    <div class="modal-actions">
+      <button id="cancelModalBtn">Cancel</button>
+      <button id="saveModalBtn">Add Habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast for Achievements -->
+<div id="toast" class="toast"></div>
+<script src="script.js"></script>
 </body>
 </html>
