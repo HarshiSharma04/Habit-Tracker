@@ -3,7 +3,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, #ffe0ec 0%, #fdf2f8 50%, #f0f9ff 100%);
+  background-image: url('bg_image_6.jpg');
   min-height: 100vh;
   text-align: center;
   font-family: 'Fredoka', sans-serif;
@@ -12,9 +12,10 @@ body {
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 10px 20px;
+  background-color: rgba(255, 255, 255, 0.35); /* light transparent white */
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Month Navigation */
@@ -612,23 +613,20 @@ body {
 }
 
 .day {
-  width: 45px;
-  height: 45px;
-  margin: 2px;
-  padding: 0;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background-color: #f8f9fa;
-  border: 2px solid transparent;
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
+  background: #fff;
+  color: #e754a3;
+  font-weight: bold;
   display: flex;
-  align-items: center;
   justify-content: center;
-  position: relative;
-  color: #666;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+  box-shadow: inset 0 0 0 2px #ffcde3;
 }
+
 
 .day:hover {
   transform: scale(1.1);
@@ -644,13 +642,7 @@ body {
   box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
 }
 
-.day.completed::after {
-  content: "✓";
-  position: absolute;
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-}
+
 
 .day.today {
   border: 3px solid #ff6b9d;
@@ -1106,3 +1098,72 @@ body {
 .modal-btn.save:hover {
   background: linear-gradient(to right, #f55c9d, #e3489f);
 }
+/* Layout for Habit Cards */
+#habitContainer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* fixed to 2 columns */
+  gap: 24px;
+  margin-top: 30px;
+  padding: 0 10px;
+}
+
+
+/* Each habit card */
+.habitCard {
+  background: #fff0f6;
+  border-radius: 18px;
+  padding: 24px; /* changed from 20px */
+  box-shadow: 0 8px 20px rgba(255, 192, 203, 0.3);
+  border: 2px solid #ffcde3;
+  transition: transform 0.2s ease;
+}
+
+.habitCard:hover {
+  transform: translateY(-4px);
+}
+
+/* Adjust inner calendar spacing */
+.calendarContent {
+  margin-top: 20px;
+}
+
+.weekRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.day {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #e754a3;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+  box-shadow: inset 0 0 0 2px #ffcde3;
+}
+
+.day.completed {
+  background: linear-gradient(to right, #f77ca2, #f35da7);
+  color: white;
+  box-shadow: none;
+}
+
+.day:hover {
+  background-color: #ffe6f0;
+}
+
+.today {
+  border: 2px dashed #f35da7;
+}
+@media (max-width: 768px) {
+  #habitContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
