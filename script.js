@@ -1,377 +1,257 @@
-// Date and month configuration
+// ==== DATE CONFIG & GLOBAL STATE ==== //
 const date = new Date();
-const currentMonth = date.getMonth();
+let currentMonth = date.getMonth();
+let currentYear = date.getFullYear();
 const currentDate = date.getDate();
-const currentYear = date.getFullYear();
 
 const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
 ];
-document.getElementById("title").innerText = months[currentMonth];
+const daysInMonthList = [31,28,31,30,31,30,31,31,30,31,30,31];
 
-const daysInMonthList = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-let daysInMonth = daysInMonthList[currentMonth];
-
-// Leap year check
-if (
-  currentMonth === 1 &&
-  ((currentYear % 4 === 0 && currentYear % 100 !== 0) || currentYear % 400 === 0)
-) {
-  daysInMonth = 29;
-}
-
-// Track habits data
+// Load or initialize data
 let habits = JSON.parse(localStorage.getItem('habits')) || [];
+let achievements = JSON.parse(localStorage.getItem('achievements')) || {};
 
-// Add Habit Button
-document.getElementById("addHabitBtn").addEventListener("click", () => {
-  const habitName = prompt("Enter the name of your habit:");
-  if (habitName && habitName.trim() !== "") {
-    const trimmedName = habitName.trim();
-    // Check if habit already exists
-    const existingHabit = habits.find(h => h.name === trimmedName);
-    if (!existingHabit) {
-      const newHabit = {
-        id: Date.now(),
-        name: trimmedName,
-        completedDays: {},
-        created: new Date().toISOString()
-      };
-      habits.push(newHabit);
-      localStorage.setItem('habits', JSON.stringify(habits));
-      createHabitCard(newHabit);
-    } else {
-      alert("A habit with this name already exists!");
-    }
-  }
-});
+const titleEl = document.getElementById("title");
+const habitContainer = document.getElementById("habitContainer");
+const addBtn = document.getElementById("addHabitBtn");
 
-// Calculate current streak for a habit
-function calculateStreak(habit) {
-  let currentStreak = 0;
-  let checkDate = new Date(currentYear, currentMonth, currentDate);
-  
-  // Go backwards from today to find consecutive completed days
-  while (checkDate.getDate() >= 1) {
-    const dayKey = `${checkDate.getFullYear()}-${checkDate.getMonth() + 1}-${checkDate.getDate()}`;
-    
-    if (habit.completedDays[dayKey] === true) {
-      currentStreak++;
-    } else {
-      break; // Break streak if day is not completed
-    }
-    
-    checkDate.setDate(checkDate.getDate() - 1);
+// === HELPER FUNCTIONS === //
+function getDaysInMonth() {
+  let dim = daysInMonthList[currentMonth];
+  if (currentMonth === 1 && ((currentYear % 4 === 0 && currentYear % 100 !== 0) || (currentYear % 400 === 0))) {
+    dim = 29;
   }
-  
-  return currentStreak;
+  return dim;
 }
 
-// Update progress bar
-function updateProgressBar(habitId, completedCount, totalDays) {
-  const progressFill = document.getElementById(`progress_${habitId}`);
-  const progressText = document.getElementById(`progress_text_${habitId}`);
-  
-  if (progressFill && progressText) {
-    const percentage = Math.round((completedCount / totalDays) * 100);
-    progressFill.style.width = `${percentage}%`;
-    progressText.textContent = `${percentage}% Complete`;
-  }
+function saveHabits() {
+  localStorage.setItem('habits', JSON.stringify(habits));
 }
 
-// Update habit statistics
-function updateHabitStats(habitId) {
-  const habit = habits.find(h => h.id === habitId);
-  if (!habit) return;
+// === MONTH NAVIGATION === //
+function createMonthNav() {
+  const nav = document.createElement("div");
+  nav.className = "month-navigation";
+  nav.innerHTML = `
+    <button class="nav-btn" id="prevMonth">&larr;</button>
+    <h1 id="title">${months[currentMonth]} ${currentYear}</h1>
+    <button class="nav-btn" id="nextMonth">&rarr;</button>
+  `;
+  const container = document.querySelector(".container");
+  container.insertBefore(nav, container.firstChild);
+  document.getElementById("prevMonth").onclick = () => changeMonth(-1);
+  document.getElementById("nextMonth").onclick = () => changeMonth(1);
+}
 
-  // Calculate completed days count
-  let completedCount = 0;
-  for (let i = 1; i <= daysInMonth; i++) {
-    const dayKey = `${currentYear}-${currentMonth + 1}-${i}`;
-    if (habit.completedDays[dayKey] === true) {
+function changeMonth(offset) {
+  currentMonth += offset;
+  if (currentMonth < 0) {
+    currentMonth = 11;
+    currentYear--;
+  } else if (currentMonth > 11) {
+    currentMonth = 0;
+    currentYear++;
+  }
+  rebuildUI();
+}
+
+// === ADD HABIT === //
+function promptNewHabit() {
+  const name = prompt("Enter habit name:");
+  if (!name || !name.trim()) return;
+
+  const category = prompt("Enter a category/tag for this habit:")?.trim() || "General";
+  const exists = habits.find(h => h.name === name && h.year === currentYear && h.month === currentMonth);
+  if (exists) {
+    return alert("Habit already exists this month!");
+  }
+
+  const newHabit = {
+    id: Date.now(),
+    name: name.trim(),
+    category,
+    year: currentYear,
+    month: currentMonth,
+    completedDays: {}
+  };
+  habits.push(newHabit);
+  saveHabits();
+  createHabitCard(newHabit);
+}
+
+// === EXPORT FUNCTION === //
+function exportJSON() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(habits));
+  const el = document.createElement("a");
+  el.href = dataStr;
+  el.download = `habits_${currentYear}_${currentMonth + 1}_${currentYear}.json`;
+  el.click();
+}
+
+// === ACHIEVEMENTS === //
+const ACHIEVEMENTS = {
+  fullMonth: {
+    check: s => s.completedCount === getDaysInMonth(),
+    message: "🎉 You completed the MONTH!"
+  },
+  oneWeek: {
+    check: s => s.currentStreak >= 7,
+    message: "🔥 7‑day streak achieved!"
+  }
+};
+
+function updateAchievement(habitId, stats) {
+  Object.entries(ACHIEVEMENTS).forEach(([key, val]) => {
+    const achKey = `${habitId}_${key}`;
+    if (val.check(stats) && !achievements[achKey]) {
+      achievements[achKey] = true;
+      localStorage.setItem('achievements', JSON.stringify(achievements));
+      setTimeout(() => alert(val.message), 200);
+    }
+  });
+}
+
+// === UPDATE STATS === //
+function calculateStats(habit) {
+  const dim = getDaysInMonth();
+  let completedCount = 0, currentStreak = 0;
+  const todayDate = new Date(currentYear, currentMonth, currentDate);
+
+  for (let day = 1; day <= dim; day++) {
+    if (habit.completedDays[`${currentYear}-${currentMonth + 1}-${day}`]) {
       completedCount++;
     }
   }
 
-  // Calculate current streak
-  const currentStreak = calculateStreak(habit);
-
-  // Update UI elements
-  const totalElement = document.getElementById(`habit_${habitId}_total`);
-  const streakElement = document.getElementById(`streak_${habitId}`);
-  
-  if (totalElement) {
-    totalElement.textContent = `${completedCount}/${daysInMonth}`;
-  }
-  
-  if (streakElement) {
-    streakElement.textContent = `${currentStreak} day streak`;
+  let dt = new Date(currentYear, currentMonth, currentDate);
+  while (dt.getMonth() === currentMonth && dt.getFullYear() === currentYear) {
+    const key = `${currentYear}-${currentMonth + 1}-${dt.getDate()}`;
+    if (!habit.completedDays[key]) break;
+    currentStreak++;
+    dt.setDate(dt.getDate() - 1);
   }
 
-  // Update progress bar
-  updateProgressBar(habitId, completedCount, daysInMonth);
-
-  return { completedCount, currentStreak };
+  const stats = { completedCount, currentStreak };
+  updateAchievement(habit.id, stats);
+  return stats;
 }
 
+// === CLICK DAILY === //
+function toggleDay(habitId, day) {
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+  const key = `${currentYear}-${currentMonth + 1}-${day}`;
+  habit.completedDays[key] = !habit.completedDays[key];
+  saveHabits();
+  rebuildUI();
+}
+
+// === BUILD HABIT CARDS === //
 function createHabitCard(habit) {
-  const habitCard = document.createElement("div");
-  habitCard.className = "habitCard";
-  habitCard.setAttribute('data-habit-id', habit.id);
+  // only for this month
+  if (habit.month !== currentMonth || habit.year !== currentYear) return;
 
-  const habitHeader = document.createElement("div");
-  habitHeader.className = "habitHeader";
+  const dim = getDaysInMonth();
+  const stats = calculateStats(habit);
 
-  const name = document.createElement("p");
-  name.className = "habitName";
-  name.textContent = habit.name;
+  const card = document.createElement("div");
+  card.className = "habitCard";
+  card.dataset.habitId = habit.id;
 
-  // Create stats container
-  const statsContainer = document.createElement("div");
-  statsContainer.className = "habitStats";
+  card.innerHTML = `
+    <div class="habitHeader">
+      <p class="habitName">${habit.name}</p>
+      <span class="habit-category">${habit.category}</span>
+      <div class="habitStats">
+        <p id="total_${habit.id}" class="habitTotal">${stats.completedCount}/${dim}</p>
+        <p id="streak_${habit.id}" class="streakCounter">${stats.currentStreak}-day streak</p>
+      </div>
+    </div>
+    <div class="progressContainer">
+      <div class="progressBar">
+        <div id="fill_${habit.id}" class="progressFill" style="width:${Math.round((stats.completedCount/dim)*100)}%"></div>
+      </div>
+      <p class="progressText">${Math.round((stats.completedCount/dim)*100)}% Complete</p>
+    </div>
+    <div class="calendarContent"></div>
+    <div class="buttonContainer">
+      <button class="resetBtn">Reset</button>
+      <button class="deleteBtn">Delete</button>
+    </div>
+  `;
 
-  const total = document.createElement("p");
-  total.className = "habitTotal";
-  total.id = `habit_${habit.id}_total`;
-
-  const streak = document.createElement("p");
-  streak.className = "streakCounter";
-  streak.id = `streak_${habit.id}`;
-
-  statsContainer.appendChild(total);
-  statsContainer.appendChild(streak);
-
-  habitHeader.appendChild(name);
-  habitHeader.appendChild(statsContainer);
-
-  // Create progress bar container
-  const progressContainer = document.createElement("div");
-  progressContainer.className = "progressContainer";
-
-  const progressBar = document.createElement("div");
-  progressBar.className = "progressBar";
-
-  const progressFill = document.createElement("div");
-  progressFill.className = "progressFill";
-  progressFill.id = `progress_${habit.id}`;
-
-  const progressText = document.createElement("p");
-  progressText.className = "progressText";
-  progressText.id = `progress_text_${habit.id}`;
-
-  progressBar.appendChild(progressFill);
-  progressContainer.appendChild(progressBar);
-  progressContainer.appendChild(progressText);
-
-  // Create calendar
-  const calendar = document.createElement("div");
-  calendar.className = "calendarContent";
-
-  // Create calendar grid
+  // build calendar
+  const calEl = card.querySelector(".calendarContent");
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  
-  // Calculate total weeks needed
-  const totalCells = Math.ceil((daysInMonth + firstDay) / 7) * 7;
-  const totalWeeks = Math.ceil(totalCells / 7);
+  const totalCells = Math.ceil((dim + firstDay) / 7) * 7;
 
-  for (let week = 0; week < totalWeeks; week++) {
-    const weekRow = document.createElement("div");
-    weekRow.className = "weekRow";
-    
-    for (let day = 0; day < 7; day++) {
-      const dayDiv = document.createElement("div");
-      dayDiv.className = "day";
-      
-      const cellIndex = week * 7 + day;
-      const currentDayNumber = cellIndex - firstDay + 1;
-      
-      if (cellIndex >= firstDay && currentDayNumber <= daysInMonth) {
-        dayDiv.innerText = currentDayNumber;
-        dayDiv.id = `habit_${habit.id}_day_${currentDayNumber}`;
-        
-        // Highlight today's date
-        if (currentDayNumber === currentDate) {
-          dayDiv.classList.add("today");
-        }
-        
-        // Check if day is completed
-        const dayKey = `${currentYear}-${currentMonth + 1}-${currentDayNumber}`;
-        if (habit.completedDays[dayKey] === true) {
-          dayDiv.classList.add("completed");
-        }
-        
-        // Add click event listener
-        dayDiv.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleDay(habit.id, currentDayNumber);
-        });
-      } else {
-        dayDiv.style.visibility = "hidden";
+  for (let idx = 0; idx < totalCells; idx++) {
+    const dayNum = idx - firstDay + 1;
+    const dayEl = document.createElement("div");
+    dayEl.className = "day";
+
+    if (dayNum >= 1 && dayNum <= dim) {
+      dayEl.textContent = dayNum;
+      dayEl.id = `habit_${habit.id}_day_${dayNum}`;
+
+      if (dayNum === currentDate) dayEl.classList.add("today");
+      const key = `${currentYear}-${currentMonth + 1}-${dayNum}`;
+      if (habit.completedDays[key]) dayEl.classList.add("completed");
+
+      dayEl.onclick = () => toggleDay(habit.id, dayNum);
+    }
+    else {
+      dayEl.style.visibility = "hidden";
+    }
+
+    const rowIndex = Math.floor(idx / 7);
+    if (!calEl.children[rowIndex]) {
+      const row = document.createElement("div");
+      row.className = "weekRow";
+      calEl.append(row);
+    }
+    calEl.children[rowIndex].append(dayEl);
+  }
+
+  // Reset/Delete handlers
+  card.querySelector(".resetBtn").onclick = () => {
+    if (confirm(`Reset all days for "${habit.name}"?`)) {
+      for (let d = 1; d <= dim; d++) {
+        delete habit.completedDays[`${currentYear}-${currentMonth + 1}-${d}`];
       }
-      
-      weekRow.appendChild(dayDiv);
+      saveHabits();
+      rebuildUI();
     }
-    calendar.appendChild(weekRow);
-  }
-
-  const buttonContainer = document.createElement("div");
-  buttonContainer.className = "buttonContainer";
-
-  const resetBtn = document.createElement("button");
-  resetBtn.textContent = "Reset";
-  resetBtn.className = "resetBtn";
-  resetBtn.addEventListener("click", () => {
-    if (confirm(`Are you sure you want to reset all progress for "${habit.name}"?`)) {
-      resetHabit(habit.id);
+  };
+  card.querySelector(".deleteBtn").onclick = () => {
+    if (confirm(`Delete habit "${habit.name}"?`)) {
+      habits = habits.filter(h => h.id !== habit.id);
+      saveHabits();
+      rebuildUI();
     }
-  });
+  };
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "Delete";
-  deleteBtn.className = "deleteBtn";
-  deleteBtn.addEventListener("click", () => {
-    if (confirm(`Are you sure you want to delete the habit "${habit.name}"?`)) {
-      deleteHabit(habit.id);
-    }
-  });
-
-  buttonContainer.appendChild(resetBtn);
-  buttonContainer.appendChild(deleteBtn);
-
-  habitCard.appendChild(habitHeader);
-  habitCard.appendChild(progressContainer);
-  habitCard.appendChild(calendar);
-  habitCard.appendChild(buttonContainer);
-
-  document.getElementById("habitContainer").appendChild(habitCard);
-
-  // Initialize stats
-  updateHabitStats(habit.id);
+  habitContainer.append(card);
 }
 
-function toggleDay(habitId, dayNumber) {
-  const habit = habits.find(h => h.id === habitId);
-  if (!habit) return;
-
-  const dayKey = `${currentYear}-${currentMonth + 1}-${dayNumber}`;
-  const dayElement = document.getElementById(`habit_${habitId}_day_${dayNumber}`);
-
-  if (habit.completedDays[dayKey] === true) {
-    // Mark as incomplete
-    habit.completedDays[dayKey] = false;
-    dayElement.classList.remove("completed");
-  } else {
-    // Mark as complete
-    habit.completedDays[dayKey] = true;
-    dayElement.classList.add("completed");
-  }
-
-  // Update statistics
-  const stats = updateHabitStats(habitId);
-
-  // Save to localStorage
-  localStorage.setItem('habits', JSON.stringify(habits));
-
-  // Check if habit is completed
-  if (stats.completedCount === daysInMonth) {
-    setTimeout(() => {
-      alert(`🎉 Congratulations! You've completed your habit "${habit.name}" for the entire month!`);
-    }, 100);
-  }
-
-  // Special message for streaks
-  if (stats.currentStreak > 0 && stats.currentStreak % 7 === 0) {
-    setTimeout(() => {
-      alert(`🔥 Amazing! You're on a ${stats.currentStreak}-day streak with "${habit.name}"!`);
-    }, 150);
-  }
+// === REBUILD UI === //
+function rebuildUI() {
+  habitContainer.innerHTML = "";
+  titleEl.textContent = `${months[currentMonth]} ${currentYear}`;
+  habits.forEach(createHabitCard);
 }
 
-function resetHabit(habitId) {
-  const habit = habits.find(h => h.id === habitId);
-  if (!habit) return;
+// === SET UP === //
+addBtn.onclick = promptNewHabit;
 
-  // Clear all completed days
-  for (let i = 1; i <= daysInMonth; i++) {
-    const dayKey = `${currentYear}-${currentMonth + 1}-${i}`;
-    habit.completedDays[dayKey] = false;
-    
-    const dayElement = document.getElementById(`habit_${habitId}_day_${i}`);
-    if (dayElement) {
-      dayElement.classList.remove("completed");
-    }
-  }
+const expBtn = document.createElement("button");
+expBtn.className = "export-btn";
+expBtn.textContent = "Export";
+document.querySelector(".container").append(expBtn);
+expBtn.onclick = exportJSON;
 
-  // Update statistics
-  updateHabitStats(habitId);
-
-  // Save to localStorage
-  localStorage.setItem('habits', JSON.stringify(habits));
-}
-
-function deleteHabit(habitId) {
-  // Remove from habits array
-  habits = habits.filter(h => h.id !== habitId);
-  
-  // Remove from localStorage
-  localStorage.setItem('habits', JSON.stringify(habits));
-  
-  // Remove from DOM
-  const habitCard = document.querySelector(`[data-habit-id="${habitId}"]`);
-  if (habitCard) {
-    habitCard.style.transform = 'translateX(-100%)';
-    habitCard.style.opacity = '0';
-    setTimeout(() => {
-      habitCard.remove();
-    }, 300);
-  }
-}
-
-// Load existing habits on page load
-function loadHabits() {
-  habits.forEach(habit => {
-    createHabitCard(habit);
-  });
-}
-
-// Add smooth entrance animation for new habits
-function animateNewHabit() {
-  const habitCards = document.querySelectorAll('.habitCard');
-  const lastCard = habitCards[habitCards.length - 1];
-  if (lastCard) {
-    lastCard.style.opacity = '0';
-    lastCard.style.transform = 'translateY(50px)';
-    setTimeout(() => {
-      lastCard.style.transition = 'all 0.5s ease';
-      lastCard.style.opacity = '1';
-      lastCard.style.transform = 'translateY(0)';
-    }, 50);
-  }
-}
-
-// Override the original createHabitCard call to add animation
-const originalAddHabitBtn = document.getElementById("addHabitBtn");
-originalAddHabitBtn.addEventListener("click", () => {
-  setTimeout(animateNewHabit, 100);
-});
-
-// Initialize the app
-document.addEventListener('DOMContentLoaded', () => {
-  loadHabits();
-  
-  // Add entrance animation to existing habits
-  setTimeout(() => {
-    const habitCards = document.querySelectorAll('.habitCard');
-    habitCards.forEach((card, index) => {
-      card.style.opacity = '0';
-      card.style.transform = 'translateY(30px)';
-      setTimeout(() => {
-        card.style.transition = 'all 0.5s ease';
-        card.style.opacity = '1';
-        card.style.transform = 'translateY(0)';
-      }, index * 100);
-    });
-  }, 100);
-});
+createMonthNav();
+rebuildUI();
