@@ -269,7 +269,47 @@ function rebuildUI() {
   habitContainer.innerHTML = "";
   titleEl.textContent = `${months[currentMonth]} ${currentYear}`;
   habits.forEach(createHabitCard);
+  renderTodayTodos();
+
 }
+function renderTodayTodos() {
+  const todayKey = `${currentYear}-${currentMonth + 1}-${currentDate}`;
+  const todoList = document.getElementById('todoList');
+  todoList.innerHTML = '';
+
+  const todayHabits = habits.filter(habit =>
+    habit.year === currentYear &&
+    habit.month === currentMonth
+  );
+
+  if (todayHabits.length === 0) {
+    todoList.innerHTML = `<div>No habits added for this month.</div>`;
+    return;
+  }
+
+  todayHabits.forEach(habit => {
+    const isCompleted = habit.completedDays[todayKey] || false;
+
+    const item = document.createElement('div');
+    item.className = `todo-item${isCompleted ? ' completed' : ''}`;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = isCompleted;
+    checkbox.onchange = () => {
+      toggleDay(habit.id, currentDate);
+      renderTodayTodos(); // refresh on check/uncheck
+    };
+
+    const label = document.createElement('label');
+    label.textContent = habit.name;
+
+    item.appendChild(checkbox);
+    item.appendChild(label);
+    todoList.appendChild(item);
+  });
+}
+
 
 // === SET UP === //
 addBtn.onclick = promptNewHabit;
@@ -282,3 +322,4 @@ expBtn.onclick = exportJSON;
 
 createMonthNav();
 rebuildUI();
+
