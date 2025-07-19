@@ -67,7 +67,8 @@ function promptNewHabit() {
 // === HANDLE MODAL SUBMIT === //
 document.getElementById("saveModalBtn").onclick = () => {
   const name = document.getElementById("habitNameInput").value.trim();
-  const category = document.getElementById("habitCategoryInput").value.trim() || "General";
+  const category = document.getElementById("habitCategoryInput").value;
+
 
   if (!name) return;
 

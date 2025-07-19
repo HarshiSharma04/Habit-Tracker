@@ -1013,3 +1013,96 @@ body {
 .toast.show {
   opacity: 1;
 }
+/* Modal Base */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  justify-content: center;
+  align-items: center;
+  font-family: 'Fredoka', sans-serif;
+}
+
+.custom-modal {
+  background: #fff;
+  padding: 30px 25px;
+  border-radius: 16px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+  width: 320px;
+  max-width: 90%;
+  text-align: center;
+  animation: popup 0.3s ease-in-out;
+}
+
+@keyframes popup {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-title {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #e754a3;
+}
+
+.modal-input,
+.modal-select {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #ffc9e2;
+  background: #fff0f6;
+  font-size: 15px;
+  color: #333;
+  outline: none;
+  transition: 0.3s border ease;
+}
+
+.modal-input:focus,
+.modal-select:focus {
+  border-color: #e754a3;
+  box-shadow: 0 0 0 2px #ffd6ea;
+}
+
+/* Button Styles */
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.modal-btn.cancel {
+  background: #ffd6ea;
+  color: #e754a3;
+}
+
+.modal-btn.cancel:hover {
+  background: #ffc0dd;
+}
+
+.modal-btn.save {
+  background: linear-gradient(to right, #f77ca2, #f35da7);
+  color: white;
+}
+
+.modal-btn.save:hover {
+  background: linear-gradient(to right, #f55c9d, #e3489f);
+}

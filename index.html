@@ -22,18 +22,29 @@
   </div>
 
   
-  <!-- Modal for Adding Habit -->
+<!-- Modal for Adding Habit -->
 <div id="habitModal" class="modal">
-  <div class="modal-content">
-    <h2>Add New Habit</h2>
-    <input type="text" id="habitNameInput" placeholder="Habit name">
-    <input type="text" id="habitCategoryInput" placeholder="Category (e.g. Health)">
+  <div class="modal-content custom-modal">
+    <h2 class="modal-title">Add New Habit</h2>
+
+    <input type="text" id="habitNameInput" placeholder="Habit name" class="modal-input" />
+
+    <select id="habitCategoryInput" class="modal-select">
+      <option value="Fitness">🏃 Fitness</option>
+      <option value="Health">🍎 Health</option>
+      <option value="Study">📚 Study</option>
+      <option value="Mindfulness">🧘 Mindfulness</option>
+      <option value="Productivity">📈 Productivity</option>
+      <option value="General">📝 General</option>
+    </select>
+
     <div class="modal-actions">
-      <button id="cancelModalBtn">Cancel</button>
-      <button id="saveModalBtn">Add Habit</button>
+      <button id="cancelModalBtn" class="modal-btn cancel">Cancel</button>
+      <button id="saveModalBtn" class="modal-btn save">Add Habit</button>
     </div>
   </div>
 </div>
+
 
 <!-- Toast for Achievements -->
 <div id="toast" class="toast"></div>
