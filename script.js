@@ -18,6 +18,11 @@ const titleEl = document.getElementById("title");
 const habitContainer = document.getElementById("habitContainer");
 const addBtn = document.getElementById("addHabitBtn");
 
+// === NOTIFICATION PERMISSION === //
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
 // === HELPER FUNCTIONS === //
 function getDaysInMonth() {
   let dim = daysInMonthList[currentMonth];
@@ -31,13 +36,27 @@ function saveHabits() {
   localStorage.setItem('habits', JSON.stringify(habits));
 }
 
+// === BROWSER NOTIFICATION === //
+function sendDailyReminder() {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  const todayKey = `${currentYear}-${currentMonth + 1}-${currentDate}`;
+  const incomplete = habits.some(h => !h.completedDays[todayKey]);
+
+  if (incomplete) {
+    new Notification("🌟 Habit Reminder", {
+      body: "Don’t forget to complete your habits today!",
+      icon: "icons/reminder-icon.png" // optional
+    });
+  }
+}
+
 // === MONTH NAVIGATION === //
 function createMonthNav() {
   const nav = document.createElement("div");
   nav.className = "month-navigation";
   nav.innerHTML = `
     <button class="nav-btn" id="prevMonth">&larr;</button>
-    
     <button class="nav-btn" id="nextMonth">&rarr;</button>
   `;
   const container = document.querySelector(".container");
@@ -59,17 +78,13 @@ function changeMonth(offset) {
 }
 
 // === ADD HABIT === //
-// === OPEN CUSTOM MODAL === //
 function promptNewHabit() {
   document.getElementById("habitModal").style.display = "flex";
 }
 
-// === HANDLE MODAL SUBMIT === //
 document.getElementById("saveModalBtn").onclick = () => {
   const name = document.getElementById("habitNameInput").value.trim();
   const category = document.getElementById("habitCategoryInput").value;
-
-
   if (!name) return;
 
   const exists = habits.find(h => h.name === name && h.year === currentYear && h.month === currentMonth);
@@ -98,12 +113,11 @@ function closeHabitModal() {
   document.getElementById("habitCategoryInput").value = "";
 }
 
-// === CUSTOM TOAST FOR ACHIEVEMENTS === //
+// === TOAST === //
 function showToast(message) {
   const toast = document.getElementById("toast");
   toast.textContent = message;
   toast.classList.add("show");
-
   setTimeout(() => {
     toast.classList.remove("show");
   }, 3000);
@@ -141,7 +155,7 @@ function updateAchievement(habitId, stats) {
   });
 }
 
-// === UPDATE STATS === //
+// === STATS === //
 function calculateStats(habit) {
   const dim = getDaysInMonth();
   let completedCount = 0, currentStreak = 0;
@@ -166,7 +180,7 @@ function calculateStats(habit) {
   return stats;
 }
 
-// === CLICK DAILY === //
+// === TOGGLE DAY === //
 function toggleDay(habitId, day) {
   const habit = habits.find(h => h.id === habitId);
   if (!habit) return;
@@ -176,9 +190,8 @@ function toggleDay(habitId, day) {
   rebuildUI();
 }
 
-// === BUILD HABIT CARDS === //
+// === CREATE HABIT CARD === //
 function createHabitCard(habit) {
-  // only for this month
   if (habit.month !== currentMonth || habit.year !== currentYear) return;
 
   const dim = getDaysInMonth();
@@ -210,7 +223,6 @@ function createHabitCard(habit) {
     </div>
   `;
 
-  // build calendar
   const calEl = card.querySelector(".calendarContent");
   const firstDay = new Date(currentYear, currentMonth, 1).getDay();
   const totalCells = Math.ceil((dim + firstDay) / 7) * 7;
@@ -223,14 +235,13 @@ function createHabitCard(habit) {
     if (dayNum >= 1 && dayNum <= dim) {
       dayEl.textContent = dayNum;
       dayEl.id = `habit_${habit.id}_day_${dayNum}`;
-
       if (dayNum === currentDate) dayEl.classList.add("today");
+
       const key = `${currentYear}-${currentMonth + 1}-${dayNum}`;
       if (habit.completedDays[key]) dayEl.classList.add("completed");
 
       dayEl.onclick = () => toggleDay(habit.id, dayNum);
-    }
-    else {
+    } else {
       dayEl.style.visibility = "hidden";
     }
 
@@ -243,7 +254,6 @@ function createHabitCard(habit) {
     calEl.children[rowIndex].append(dayEl);
   }
 
-  // Reset/Delete handlers
   card.querySelector(".resetBtn").onclick = () => {
     if (confirm(`Reset all days for "${habit.name}"?`)) {
       for (let d = 1; d <= dim; d++) {
@@ -270,16 +280,17 @@ function rebuildUI() {
   titleEl.textContent = `${months[currentMonth]} ${currentYear}`;
   habits.forEach(createHabitCard);
   renderTodayTodos();
-
+  renderHabitChart();
+  sendDailyReminder(); // 🚨 Trigger reminder on rebuild
 }
+
 function renderTodayTodos() {
   const todayKey = `${currentYear}-${currentMonth + 1}-${currentDate}`;
   const todoList = document.getElementById('todoList');
   todoList.innerHTML = '';
 
   const todayHabits = habits.filter(habit =>
-    habit.year === currentYear &&
-    habit.month === currentMonth
+    habit.year === currentYear && habit.month === currentMonth
   );
 
   if (todayHabits.length === 0) {
@@ -298,7 +309,7 @@ function renderTodayTodos() {
     checkbox.checked = isCompleted;
     checkbox.onchange = () => {
       toggleDay(habit.id, currentDate);
-      renderTodayTodos(); // refresh on check/uncheck
+      renderTodayTodos();
     };
 
     const label = document.createElement('label');
@@ -310,8 +321,94 @@ function renderTodayTodos() {
   });
 }
 
+// === CHART === //
+function renderHabitChart() {
+  const ctx = document.getElementById("habitChart").getContext("2d");
+  const labels = [];
+  const data = [];
 
-// === SET UP === //
+  const dim = getDaysInMonth();
+  for (let day = 1; day <= dim; day++) {
+    labels.push(`Day ${day}`);
+    let completedCount = 0;
+    habits.forEach(habit => {
+      const key = `${currentYear}-${currentMonth + 1}-${day}`;
+      if (habit.completedDays[key]) completedCount++;
+    });
+    data.push(completedCount);
+  }
+
+  if (window.habitChartInstance) window.habitChartInstance.destroy();
+
+  window.habitChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Habits Completed',
+        data,
+        fill: true,
+        borderColor: '#ff4081',
+        backgroundColor: 'rgba(255, 105, 180, 0.2)',
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#ff4081',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: '📈 Monthly Habit Completion Overview',
+          font: { size: 20, weight: 'bold' },
+          color: getComputedStyle(document.body).getPropertyValue('--text-color')
+        },
+        legend: {
+          labels: {
+            color: getComputedStyle(document.body).getPropertyValue('--text-color')
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return `Habits Completed: ${context.parsed.y}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Day of the Month',
+            color: getComputedStyle(document.body).getPropertyValue('--text-color')
+          },
+          ticks: {
+            color: getComputedStyle(document.body).getPropertyValue('--text-color'),
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Habits Completed',
+            color: getComputedStyle(document.body).getPropertyValue('--text-color')
+          },
+          ticks: {
+            color: getComputedStyle(document.body).getPropertyValue('--text-color'),
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+}
+
+// === INIT === //
 addBtn.onclick = promptNewHabit;
 
 const expBtn = document.createElement("button");
@@ -322,4 +419,3 @@ expBtn.onclick = exportJSON;
 
 createMonthNav();
 rebuildUI();
-
